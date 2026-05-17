@@ -14,10 +14,13 @@ const STEPS = new Set([
   'upsell2_paid',
   'upsell3_view',
   'upsell3_paid',
+  'upsell4_view',
+  'upsell4_paid',
   'funnel_complete',
   'bump_videocall',
   'bump_whatsapp',
   'bump_calcinha',
+  'bump_packsecreto',
 ])
 
 export async function POST(req: NextRequest) {

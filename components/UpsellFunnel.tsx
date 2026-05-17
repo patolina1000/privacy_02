@@ -8,7 +8,7 @@ interface Props {
   onClose: () => void
 }
 
-type FunnelStep = 'upsell1' | 'upsell2' | 'upsell3' | 'final'
+type FunnelStep = 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4' | 'final'
 type QrStep = 'offer' | 'loading' | 'qr'
 
 interface PixData {
@@ -51,6 +51,7 @@ export default function UpsellFunnel({ onClose }: Props) {
   const [qrStep, setQrStep] = useState<QrStep>('offer')
   const [extra1, setExtra1] = useState(false)
   const [extra2, setExtra2] = useState(false)
+  const [extra4, setExtra4] = useState(false)
   const [pixData, setPixData] = useState<PixData | null>(null)
   const [copied, setCopied] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -59,6 +60,7 @@ export default function UpsellFunnel({ onClose }: Props) {
   const u1Total = 6.5 + (extra1 ? 7 : 0)
   const u2Total = 12.53 + (extra2 ? 14 : 0)
   const u3Total = 12.9 // Verificação Final Obrigatória (sem order bump)
+  const u4Total = 20 + (extra4 ? 17 : 0) // Acesso VIP Completo (+ Pack Secreto)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -75,6 +77,7 @@ export default function UpsellFunnel({ onClose }: Props) {
     if (funnel === 'upsell1') trackFunnel('upsell1_view')
     else if (funnel === 'upsell2') trackFunnel('upsell2_view')
     else if (funnel === 'upsell3') trackFunnel('upsell3_view')
+    else if (funnel === 'upsell4') trackFunnel('upsell4_view')
     else if (funnel === 'final') trackFunnel('funnel_complete')
   }, [funnel])
 
@@ -83,7 +86,8 @@ export default function UpsellFunnel({ onClose }: Props) {
   const STEP = {
     upsell1: { value: u1Total, cid: 'upsell-verificacao', cname: 'Verificação Obrigatória', paid: 'upsell1_paid' as const, next: 'upsell2' as FunnelStep },
     upsell2: { value: u2Total, cid: 'upsell-liberacao', cname: 'Taxa de Liberação de Uso', paid: 'upsell2_paid' as const, next: 'upsell3' as FunnelStep },
-    upsell3: { value: u3Total, cid: 'upsell-final', cname: 'Verificação Final Obrigatória', paid: 'upsell3_paid' as const, next: 'final' as FunnelStep },
+    upsell3: { value: u3Total, cid: 'upsell-final', cname: 'Verificação Final Obrigatória', paid: 'upsell3_paid' as const, next: 'upsell4' as FunnelStep },
+    upsell4: { value: u4Total, cid: 'upsell-vip', cname: 'Acesso VIP Completo', paid: 'upsell4_paid' as const, next: 'final' as FunnelStep },
   }
 
   useEffect(() => {
@@ -96,7 +100,7 @@ export default function UpsellFunnel({ onClose }: Props) {
           clearInterval(pollRef.current!)
 
           // Purchase separado para cada taxa
-          const cfg = STEP[funnel as 'upsell1' | 'upsell2' | 'upsell3']
+          const cfg = STEP[funnel as 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4']
           if (cfg) {
             trackEvent({
               event: 'Purchase',
@@ -109,6 +113,7 @@ export default function UpsellFunnel({ onClose }: Props) {
             trackFunnel(cfg.paid)
             if (funnel === 'upsell1' && extra1) trackFunnel('bump_whatsapp')   // order bump U1
             if (funnel === 'upsell2' && extra2) trackFunnel('bump_calcinha')  // order bump U2
+            if (funnel === 'upsell4' && extra4) trackFunnel('bump_packsecreto') // order bump U4
 
             setFunnel(cfg.next); setQrStep('offer'); setPixData(null)
           }
@@ -132,7 +137,7 @@ export default function UpsellFunnel({ onClose }: Props) {
       setQrStep('qr')
 
       // InitiateCheckout para cada taxa
-      const cfg = STEP[funnel as 'upsell1' | 'upsell2' | 'upsell3']
+      const cfg = STEP[funnel as 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4']
       trackEvent({
         event: 'InitiateCheckout',
         value: amount,
@@ -382,6 +387,104 @@ export default function UpsellFunnel({ onClose }: Props) {
                   >
                     {qrStep === 'loading' ? 'Gerando PIX...' : 'Confirmar maioridade e liberar acesso ✅'}
                   </button>
+                  <Footer />
+                </div>
+              )
+            }
+          </>
+        )}
+
+        {/* ── UPSELL 4: Conteúdo Privado Detectado (Acesso VIP) ── */}
+        {funnel === 'upsell4' && (
+          <>
+            <TimerBar label="Tempo restante:" />
+            <div className="bg-gradient-to-r from-violet-600 to-violet-500 px-5 pt-4 pb-4 text-center">
+              <p className="text-3xl mb-1">🔐</p>
+              <h2 className="text-white text-lg font-black mb-0.5">Conteúdo Privado Detectado</h2>
+              <p className="text-white/80 text-xs">Acesso restrito do VIP identificado</p>
+            </div>
+
+            {qrStep === 'qr'
+              ? <QRScreen accentClass="text-violet-500" />
+              : (
+                <div className="bg-white px-5 pt-4 pb-5">
+                  <video
+                    src="/media/anexo_2.mp4"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full rounded-xl mb-3 border border-gray-200"
+                    onError={(e) => { (e.currentTarget as HTMLVideoElement).style.display = 'none' }}
+                  />
+                  <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                    O sistema identificou que este acesso contém <strong>pastas privadas</strong> e
+                    conteúdos restritos do VIP. Por motivos de sigilo, segurança e proteção contra
+                    vazamentos, é necessária uma <strong>ativação única</strong> para desbloqueio
+                    completo do acervo.
+                  </p>
+                  <p className="text-sm font-bold text-gray-900 mb-2">🎯 Escolha como deseja acessar:</p>
+
+                  {/* Acesso limitado (recusa) */}
+                  <div className="border border-gray-200 rounded-xl px-3 py-2.5 mb-3 bg-gray-50">
+                    <p className="text-sm font-bold text-gray-500 mb-1">📂 Acesso Limitado</p>
+                    <ul className="space-y-1">
+                      {['Apenas parte dos conteúdos liberados', 'Sem atualizações automáticas', 'Recursos privados bloqueados'].map((b) => (
+                        <li key={b} className="text-[12px] text-gray-400 leading-tight">• {b}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Acesso VIP completo */}
+                  <div className="border-2 border-violet-400 rounded-xl px-3 py-3 mb-3 bg-violet-50">
+                    <p className="text-sm font-black text-violet-700 mb-1.5">💎 Acesso VIP Completo</p>
+                    <ul className="space-y-1.5">
+                      {['Todas as pastas liberadas 🔥', 'Conteúdos exclusivos e raros', 'Downloads ilimitados', 'Atualizações diárias automáticas', 'Pedidos especiais desbloqueados', 'Bônus secretos liberados 🎁'].map((b) => (
+                        <li key={b} className="flex items-center gap-2 text-sm text-gray-700"><Check />{b}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Order bump */}
+                  <div className="relative mb-3">
+                    <span className="absolute -top-2.5 left-3 bg-violet-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide z-10">
+                      Oferta especial
+                    </span>
+                    <label
+                      className="flex items-center gap-3 border-2 border-dashed border-violet-400 rounded-xl px-3 pt-4 pb-3 bg-violet-50 cursor-pointer"
+                      onClick={() => setExtra4(!extra4)}
+                    >
+                      <div className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${extra4 ? 'bg-violet-500 border-violet-500' : 'border-gray-300 bg-white'}`}>
+                        {extra4 && <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3"><path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-900 leading-tight">🎁 Pack Secreto +18</p>
+                        <p className="text-sm font-black text-violet-600 leading-tight">+ R$ 17,00</p>
+                        <p className="text-[11px] text-gray-500 leading-tight">+300 mídias proibidas que não entram no VIP</p>
+                      </div>
+                    </label>
+                  </div>
+
+                  <p className="text-center text-sm text-gray-600 mb-3">
+                    Total: <span className="font-black text-gray-900">R$ {fmt(u4Total)}</span>
+                  </p>
+                  <button
+                    onClick={() => pay(u4Total, 'Acesso VIP Completo')}
+                    disabled={qrStep === 'loading'}
+                    className="w-full bg-gradient-to-r from-violet-600 to-violet-500 text-white font-black text-sm py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-violet-200/60 active:scale-[0.98] transition-transform disabled:opacity-70"
+                  >
+                    {qrStep === 'loading' ? 'Gerando PIX...' : '💎 Ativar Acesso VIP Completo'}
+                  </button>
+                  <button
+                    onClick={() => setFunnel('final')}
+                    disabled={qrStep === 'loading'}
+                    className="w-full mt-2 text-xs text-gray-400 underline disabled:opacity-50"
+                  >
+                    Continuar com acesso limitado
+                  </button>
+                  <div className="border border-gray-200 bg-gray-50 rounded-xl px-3 py-2 mt-3 text-center">
+                    <p className="text-[11px] text-gray-500">🔒 Conteúdo privado e sigiloso. Compartilhamentos indevidos resultam em bloqueio permanente do acesso.</p>
+                  </div>
                   <Footer />
                 </div>
               )
