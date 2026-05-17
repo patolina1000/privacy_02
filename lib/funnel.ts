@@ -12,6 +12,9 @@ export type FunnelStep =
   | 'upsell2_view'   // chegou no Upsell 2 (Liberação)
   | 'upsell2_paid'   // pagou o Upsell 2
   | 'funnel_complete' // chegou na tela final
+  | 'bump_videocall' // order bump da videochamada aceito (checkout principal)
+  | 'bump_whatsapp'  // order bump do WhatsApp aceito (Upsell 1)
+  | 'bump_calcinha'  // order bump da calcinha aceito (Upsell 2)
 
 export function trackFunnel(step: FunnelStep): void {
   try {

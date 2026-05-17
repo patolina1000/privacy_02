@@ -72,6 +72,7 @@ export default function PixModal({ plan, onClose, onPaid }: Props) {
             order_id: pixData?.id,
           })
           trackFunnel('main_paid') // plano principal pago
+          if (withVideoCall) trackFunnel('bump_videocall') // order bump aceito
 
           if (onPaid) { onClose(); onPaid() } else { setStep('paid') }
         }

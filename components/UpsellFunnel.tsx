@@ -95,6 +95,8 @@ export default function UpsellFunnel({ onClose }: Props) {
             order_id: pixData?.id,
           })
           trackFunnel(isU1 ? 'upsell1_paid' : 'upsell2_paid')
+          if (isU1 && extra1) trackFunnel('bump_whatsapp')   // order bump U1
+          if (!isU1 && extra2) trackFunnel('bump_calcinha')  // order bump U2
 
           if (funnel === 'upsell1') { setFunnel('upsell2'); setQrStep('offer'); setPixData(null) }
           else if (funnel === 'upsell2') { setFunnel('final'); setQrStep('offer'); setPixData(null) }

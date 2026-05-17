@@ -13,6 +13,9 @@ const STEPS = new Set([
   'upsell2_view',
   'upsell2_paid',
   'funnel_complete',
+  'bump_videocall',
+  'bump_whatsapp',
+  'bump_calcinha',
 ])
 
 export async function POST(req: NextRequest) {
