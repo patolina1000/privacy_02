@@ -60,7 +60,7 @@ export default function UpsellFunnel({ onClose }: Props) {
   const u1Total = 6.5 + (extra1 ? 7 : 0)
   const u2Total = 12.53 + (extra2 ? 14 : 0)
   const u3Total = 12.9 // Verificação Final Obrigatória (sem order bump)
-  const u4Total = 20 + (extra4 ? 17 : 0) // Acesso VIP Completo (+ Pack Secreto)
+  const u4Total = 20 + (extra4 ? 5.4 : 0) // Acesso VIP Completo (+ Pack Secreto)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -459,7 +459,7 @@ export default function UpsellFunnel({ onClose }: Props) {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-gray-900 leading-tight">🎁 Pack Secreto +18</p>
-                        <p className="text-sm font-black text-violet-600 leading-tight">+ R$ 17,00</p>
+                        <p className="text-sm font-black text-violet-600 leading-tight">+ R$ 5,40</p>
                         <p className="text-[11px] text-gray-500 leading-tight">+300 mídias proibidas que não entram no VIP</p>
                       </div>
                     </label>
