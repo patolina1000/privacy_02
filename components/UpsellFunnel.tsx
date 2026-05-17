@@ -4,11 +4,12 @@ import { useState, useEffect, useRef } from 'react'
 import { trackEvent } from '@/lib/tiktok-pixel'
 import { trackFunnel } from '@/lib/funnel'
 
+export type FunnelStep = 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4' | 'upsell5' | 'final'
+
 interface Props {
   onClose: () => void
+  initialStep?: FunnelStep
 }
-
-type FunnelStep = 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4' | 'upsell5' | 'final'
 type QrStep = 'offer' | 'loading' | 'qr'
 
 interface PixData {
@@ -46,8 +47,8 @@ const Shield = () => (
   </svg>
 )
 
-export default function UpsellFunnel({ onClose }: Props) {
-  const [funnel, setFunnel] = useState<FunnelStep>('upsell1')
+export default function UpsellFunnel({ onClose, initialStep }: Props) {
+  const [funnel, setFunnel] = useState<FunnelStep>(initialStep ?? 'upsell1')
   const [qrStep, setQrStep] = useState<QrStep>('offer')
   const [extra1, setExtra1] = useState(false)
   const [extra2, setExtra2] = useState(false)
@@ -85,6 +86,14 @@ export default function UpsellFunnel({ onClose }: Props) {
     else if (funnel === 'upsell4') trackFunnel('upsell4_view')
     else if (funnel === 'upsell5') trackFunnel('upsell5_view')
     else if (funnel === 'final') trackFunnel('funnel_complete')
+
+    // Persiste o passo: se o lead recarregar a página, ele volta
+    // preso no funil de taxas no ponto onde parou. Ao concluir
+    // (final), limpa — funil terminado, não prende mais.
+    try {
+      if (funnel === 'final') localStorage.removeItem('mv_upsell')
+      else localStorage.setItem('mv_upsell', funnel)
+    } catch {}
   }, [funnel])
 
   // Config de cada taxa (upsell). Mantém o tracking e as transições
@@ -178,7 +187,6 @@ export default function UpsellFunnel({ onClose }: Props) {
         {label}
       </span>
       <span className="text-pink-400 font-bold text-sm">{countdown}</span>
-      <button onClick={onClose} className="text-white/50 hover:text-white text-xl leading-none">×</button>
     </div>
   )
 
