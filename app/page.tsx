@@ -9,12 +9,14 @@ import Testimonials from '@/components/Testimonials'
 import FAQ from '@/components/FAQ'
 import SocialProof from '@/components/SocialProof'
 import Footer from '@/components/Footer'
+import FunnelTracker from '@/components/FunnelTracker'
 
 const config = siteConfig as SiteConfig
 
 export default function Home() {
   return (
     <main className="flex justify-center bg-[#f5f5f5] min-h-screen">
+      <FunnelTracker />
       <div className="w-full max-w-[430px] bg-white relative overflow-hidden shadow-xl">
         <Header promo={config.promo} />
         <Hero model={config.model} stats={config.stats} />

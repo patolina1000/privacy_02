@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { PlanConfig } from '@/types/site'
 import { trackEvent } from '@/lib/tiktok-pixel'
+import { trackFunnel } from '@/lib/funnel'
 
 interface Props {
   plan: PlanConfig
@@ -42,6 +43,7 @@ export default function PixModal({ plan, onClose, onPaid }: Props) {
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
+    trackFunnel('checkout_open') // lead abriu o checkout do plano principal
     return () => {
       document.body.style.overflow = ''
       if (pollRef.current) clearInterval(pollRef.current)
@@ -69,6 +71,7 @@ export default function PixModal({ plan, onClose, onPaid }: Props) {
             content_name: plan.title,
             order_id: pixData?.id,
           })
+          trackFunnel('main_paid') // plano principal pago
 
           if (onPaid) { onClose(); onPaid() } else { setStep('paid') }
         }

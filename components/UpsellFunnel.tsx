@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { trackEvent } from '@/lib/tiktok-pixel'
+import { trackFunnel } from '@/lib/funnel'
 
 interface Props {
   onClose: () => void
@@ -66,6 +67,15 @@ export default function UpsellFunnel({ onClose }: Props) {
     }
   }, [])
 
+  // Conta quantos leads chegam em cada etapa do funil de upsell.
+  // funnel só avança (upsell1 → upsell2 → final), então cada valor
+  // dispara uma vez.
+  useEffect(() => {
+    if (funnel === 'upsell1') trackFunnel('upsell1_view')
+    else if (funnel === 'upsell2') trackFunnel('upsell2_view')
+    else if (funnel === 'final') trackFunnel('funnel_complete')
+  }, [funnel])
+
   useEffect(() => {
     if (qrStep !== 'qr' || !pixData) return
     pollRef.current = setInterval(async () => {
@@ -84,6 +94,7 @@ export default function UpsellFunnel({ onClose }: Props) {
             content_name: isU1 ? 'Verificação Obrigatória' : 'Taxa de Liberação de Uso',
             order_id: pixData?.id,
           })
+          trackFunnel(isU1 ? 'upsell1_paid' : 'upsell2_paid')
 
           if (funnel === 'upsell1') { setFunnel('upsell2'); setQrStep('offer'); setPixData(null) }
           else if (funnel === 'upsell2') { setFunnel('final'); setQrStep('offer'); setPixData(null) }

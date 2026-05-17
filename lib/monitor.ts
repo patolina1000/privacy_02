@@ -22,7 +22,7 @@ function getDomain(): string {
 const MODEL_NAME =
   (siteConfig as { model?: { name?: string } })?.model?.name || 'desconhecido'
 
-export type MonitorEvent = 'pix.created' | 'payment.confirmed'
+export type MonitorEvent = 'pix.created' | 'payment.confirmed' | 'funnel'
 
 // Retorna uma Promise para o caller poder (opcionalmente) aguardar.
 // O webhook de pagamento aguarda; o create dispara e segue.
