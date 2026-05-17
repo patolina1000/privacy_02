@@ -11,6 +11,8 @@ export type FunnelStep =
   | 'upsell1_paid'   // pagou o Upsell 1
   | 'upsell2_view'   // chegou no Upsell 2 (Liberação)
   | 'upsell2_paid'   // pagou o Upsell 2
+  | 'upsell3_view'   // chegou no Upsell 3 (Verificação Final)
+  | 'upsell3_paid'   // pagou o Upsell 3
   | 'funnel_complete' // chegou na tela final
   | 'bump_videocall' // order bump da videochamada aceito (checkout principal)
   | 'bump_whatsapp'  // order bump do WhatsApp aceito (Upsell 1)

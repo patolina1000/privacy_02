@@ -12,6 +12,8 @@ const STEPS = new Set([
   'upsell1_paid',
   'upsell2_view',
   'upsell2_paid',
+  'upsell3_view',
+  'upsell3_paid',
   'funnel_complete',
   'bump_videocall',
   'bump_whatsapp',
