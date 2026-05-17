@@ -106,42 +106,65 @@ export default function UpsellFunnel({ onClose, initialStep }: Props) {
     upsell5: { value: u5Total, cid: 'upsell-reembolsavel', cname: 'Taxa Reembolsável', paid: 'upsell5_paid' as const, next: 'final' as FunnelStep },
   }
 
+  // Trata a confirmação de uma transação. Roda 1x por txid (guard),
+  // então serve tanto pro polling quanto pra checagem ao reabrir a
+  // página (pagamento feito fora do site).
+  function confirmPaid(txid: string) {
+    if (paidIdsRef.current.has(txid)) return
+    paidIdsRef.current.add(txid)
+    if (pollRef.current) clearInterval(pollRef.current)
+
+    const cfg = STEP[funnel as 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4' | 'upsell5']
+    if (!cfg) return
+    trackEvent({
+      event: 'Purchase',
+      value: cfg.value,
+      content_id: cfg.cid,
+      content_name: cfg.cname,
+      order_id: txid,
+      event_id: `purchase_${txid}`,
+    })
+    trackFunnel(cfg.paid)
+    if (funnel === 'upsell1' && extra1) trackFunnel('bump_whatsapp')   // order bump U1
+    if (funnel === 'upsell2' && extra2) trackFunnel('bump_calcinha')  // order bump U2
+    if (funnel === 'upsell4' && extra4) trackFunnel('bump_packsecreto') // order bump U4
+    if (funnel === 'upsell5' && extra5) trackFunnel('bump_segurovip')   // order bump U5
+    try { localStorage.removeItem('mv_upsell_tx') } catch {}
+    setFunnel(cfg.next); setQrStep('offer'); setPixData(null)
+  }
+
   useEffect(() => {
     if (qrStep !== 'qr' || !pixData) return
+    const id = pixData.id
     pollRef.current = setInterval(async () => {
       try {
-        const res = await fetch(`/api/pix/status?id=${pixData.id}`)
+        const res = await fetch(`/api/pix/status?id=${id}`)
         const d = await res.json()
-        if (d.status === 'paid') {
-          // Garante 1x por transação (anti duplo-disparo do polling async)
-          if (!pixData || paidIdsRef.current.has(pixData.id)) return
-          paidIdsRef.current.add(pixData.id)
-          clearInterval(pollRef.current!)
-
-          // Purchase separado para cada taxa
-          const cfg = STEP[funnel as 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4' | 'upsell5']
-          if (cfg) {
-            trackEvent({
-              event: 'Purchase',
-              value: cfg.value,
-              content_id: cfg.cid,
-              content_name: cfg.cname,
-              order_id: pixData?.id,
-              event_id: pixData ? `purchase_${pixData.id}` : undefined,
-            })
-            trackFunnel(cfg.paid)
-            if (funnel === 'upsell1' && extra1) trackFunnel('bump_whatsapp')   // order bump U1
-            if (funnel === 'upsell2' && extra2) trackFunnel('bump_calcinha')  // order bump U2
-            if (funnel === 'upsell4' && extra4) trackFunnel('bump_packsecreto') // order bump U4
-            if (funnel === 'upsell5' && extra5) trackFunnel('bump_segurovip')   // order bump U5
-
-            setFunnel(cfg.next); setQrStep('offer'); setPixData(null)
-          }
-        }
+        if (d.status === 'paid') confirmPaid(id)
       } catch {}
     }, 3000)
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
   }, [qrStep, pixData, funnel])
+
+  // Ao (re)abrir o modal: se havia um PIX pendente salvo para este
+  // passo, verifica o status. Se já foi pago FORA do site, avança o
+  // funil; se ainda não, volta pro QR e o polling continua nele.
+  useEffect(() => {
+    let saved: { step?: string; id?: string } | null = null
+    try { saved = JSON.parse(localStorage.getItem('mv_upsell_tx') || 'null') } catch {}
+    if (!saved || !saved.id || saved.step !== funnel) return
+    const id = saved.id
+    ;(async () => {
+      try {
+        const r = await fetch(`/api/pix/status?id=${id}`)
+        const d = await r.json()
+        if (d.status === 'paid') confirmPaid(id)
+        else { setPixData({ id, pix_copia_cola: '' }); setQrStep('qr') }
+      } catch {}
+    })()
+    // só na montagem
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function pay(amount: number, description: string) {
     setQrStep('loading')
@@ -153,8 +176,12 @@ export default function UpsellFunnel({ onClose, initialStep }: Props) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error()
-      setPixData({ id: data.transaction.id, pix_copia_cola: data.transaction.pix_copia_cola })
+      const txid = data.transaction.id
+      setPixData({ id: txid, pix_copia_cola: data.transaction.pix_copia_cola })
       setQrStep('qr')
+      // Guarda o PIX pendente: se ele pagar fora do site e recarregar,
+      // a checagem na reabertura detecta e avança o funil.
+      try { localStorage.setItem('mv_upsell_tx', JSON.stringify({ step: funnel, id: txid })) } catch {}
 
       // InitiateCheckout para cada taxa
       const cfg = STEP[funnel as 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4' | 'upsell5']
@@ -494,13 +521,6 @@ export default function UpsellFunnel({ onClose, initialStep }: Props) {
                   >
                     {qrStep === 'loading' ? 'Gerando PIX...' : '💎 Ativar Acesso VIP Completo'}
                   </button>
-                  <button
-                    onClick={() => setFunnel('final')}
-                    disabled={qrStep === 'loading'}
-                    className="w-full mt-2 text-xs text-gray-400 underline disabled:opacity-50"
-                  >
-                    Continuar com acesso limitado
-                  </button>
                   <div className="border border-gray-200 bg-gray-50 rounded-xl px-3 py-2 mt-3 text-center">
                     <p className="text-[11px] text-gray-500">🔒 Conteúdo privado e sigiloso. Compartilhamentos indevidos resultam em bloqueio permanente do acesso.</p>
                   </div>
@@ -578,13 +598,6 @@ export default function UpsellFunnel({ onClose, initialStep }: Props) {
                     className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-black text-sm py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-200/60 active:scale-[0.98] transition-transform disabled:opacity-70"
                   >
                     {qrStep === 'loading' ? 'Gerando PIX...' : '💰 Pagar taxa reembolsável e liberar'}
-                  </button>
-                  <button
-                    onClick={() => setFunnel('final')}
-                    disabled={qrStep === 'loading'}
-                    className="w-full mt-2 text-xs text-gray-400 underline disabled:opacity-50"
-                  >
-                    Pular esta etapa
                   </button>
                   <Footer />
                 </div>
