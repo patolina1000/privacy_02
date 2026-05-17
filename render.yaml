@@ -17,8 +17,9 @@ services:
         sync: false          # D84JMLBC77UDS4G4KNC0
       - key: TIKTOK_ACCESS_TOKEN
         sync: false          # preencher no dashboard do Render (Events API token)
-      - key: TIKTOK_TEST_EVENT_CODE
-        sync: false          # remover após validar os eventos (ex: TEST64188)
+      # NÃO definir TIKTOK_TEST_EVENT_CODE em produção: com ele os eventos
+      # vão como "teste" e NÃO contam no relatório/atribuição do TikTok.
+      # Use só localmente para validar na aba Test Events.
       - key: NEXT_PUBLIC_VIP_GROUP_URL
         sync: false          # link do grupo VIP (ex: https://t.me/SEU_BOT)
       - key: MONITOR_URL

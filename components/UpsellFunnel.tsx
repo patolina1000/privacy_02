@@ -93,6 +93,7 @@ export default function UpsellFunnel({ onClose }: Props) {
             content_id: isU1 ? 'upsell-verificacao' : 'upsell-liberacao',
             content_name: isU1 ? 'Verificação Obrigatória' : 'Taxa de Liberação de Uso',
             order_id: pixData?.id,
+            event_id: pixData ? `purchase_${pixData.id}` : undefined,
           })
           trackFunnel(isU1 ? 'upsell1_paid' : 'upsell2_paid')
           if (isU1 && extra1) trackFunnel('bump_whatsapp')   // order bump U1

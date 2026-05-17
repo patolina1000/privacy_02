@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { markPaid } from '@/lib/payment-store'
 import { notifyMonitor } from '@/lib/monitor'
+import { sendTikTokEvent } from '@/lib/tiktok-server'
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
@@ -42,6 +43,25 @@ export async function POST(req: NextRequest) {
         net_amount: event.net_amount ?? null,
         paid_at: event.paid_at ?? null,
       })
+    } catch {}
+
+    // Purchase server-side: a venda é certa aqui, independente do
+    // cliente ter fechado a aba. event_id determinístico = mesmo do
+    // client (purchase_<txid>), então o TikTok deduplica e não conta 2x.
+    try {
+      const extId = String(event.external_id ?? '')
+      const isUpsell = extId.startsWith('up-')
+      await sendTikTokEvent([
+        {
+          event: 'Purchase',
+          event_id: `purchase_${event.transaction_id}`,
+          value: typeof event.amount === 'number' ? event.amount : Number(event.amount) || undefined,
+          currency: 'BRL',
+          content_id: isUpsell ? 'upsell' : 'plan',
+          content_name: isUpsell ? 'Upsell' : 'Plano principal',
+          order_id: String(event.transaction_id),
+        },
+      ])
     } catch {}
   }
 

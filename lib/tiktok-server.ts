@@ -79,18 +79,32 @@ export async function sendTikTokEvent(events: TikTokServerEvent[]) {
     }),
   }
 
-  try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Token': accessToken,
-      },
-      body: JSON.stringify(payload),
-    })
-    const data = await res.json()
-    console.log(`[TikTok API] ${eventNames} → code: ${data?.code} ${data?.message ?? ''}`)
-  } catch (err) {
-    console.error('[TikTok API] Erro ao enviar evento:', err)
+  // O endpoint do TikTok às vezes derruba o handshake TLS a partir do
+  // Render (ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR). É transitório — tentamos
+  // de novo algumas vezes antes de desistir.
+  const body = JSON.stringify(payload)
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Token': accessToken,
+        },
+        body,
+      })
+      const data = await res.json()
+      console.log(
+        `[TikTok API] ${eventNames} → code: ${data?.code} ${data?.message ?? ''}` +
+          (attempt > 1 ? ` (tentativa ${attempt})` : '')
+      )
+      return
+    } catch (err) {
+      if (attempt === 3) {
+        console.error(`[TikTok API] Falhou após ${attempt} tentativas:`, err)
+      } else {
+        await new Promise((r) => setTimeout(r, 400 * attempt))
+      }
+    }
   }
 }

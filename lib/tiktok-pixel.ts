@@ -43,9 +43,12 @@ export async function trackEvent(params: {
   content_id?: string
   content_name?: string
   order_id?: string
+  event_id?: string
 }) {
   const { event, email, name, value, currency, content_id, content_name, order_id } = params
-  const event_id = genEventId()
+  // event_id determinístico (Purchase usa purchase_<txid>) para o TikTok
+  // deduplicar pixel + Events API client + Purchase server-side do webhook.
+  const event_id = params.event_id || genEventId()
   const ttclid = getTtclid()
   const ttp = getTtp()
   const url = typeof window !== 'undefined' ? window.location.href : ''

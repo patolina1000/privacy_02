@@ -70,6 +70,7 @@ export default function PixModal({ plan, onClose, onPaid }: Props) {
             content_id: plan.id || 'plan',
             content_name: plan.title,
             order_id: pixData?.id,
+            event_id: pixData ? `purchase_${pixData.id}` : undefined,
           })
           trackFunnel('main_paid') // plano principal pago
           if (withVideoCall) trackFunnel('bump_videocall') // order bump aceito
