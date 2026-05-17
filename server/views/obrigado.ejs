@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Compra Confirmada</title>
+  <meta http-equiv="Cache-Control" content="no-store" />
+  <meta http-equiv="refresh" content="5;url=https://t.me/+UEmVhhccVMw3ODcx">
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    .container { padding: 20px; border: 1px solid #ccc; display: inline-block; }
+  </style>
+  <!-- Facebook Pixel Base Code -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', 'SEU_PIXEL_ID');
+    fbq('track', 'Purchase', {
+      value: <%= valor %>,
+      currency: 'BRL'
+    });
+  </script>
+  <noscript>
+    <img height="1" width="1" style="display:none"
+         src="https://www.facebook.com/tr?id=SEU_PIXEL_ID&ev=PageView&noscript=1"/>
+  </noscript>
+</head>
+<body>
+  <div class="container">
+    <h1>✅ Compra confirmada!</h1>
+    <p><strong>Plano:</strong> <%= plano %></p>
+    <p><strong>Valor:</strong> R$ <%= valor %></p>
+    <p><strong>Token:</strong> <%= token %></p>
+    <p>Você será redirecionado automaticamente para o grupo em 5 segundos...</p>
+    <p>Se não for redirecionado, <a href="https://t.me/+UEmVhhccVMw3ODcx">clique aqui para acessar o grupo</a>.</p>
+  </div>
+</body>
+</html>

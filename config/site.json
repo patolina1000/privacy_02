@@ -1,0 +1,181 @@
+{
+  "promo": {
+    "enabled": true,
+    "text": "ESSA PROMOÇÃO É VÁLIDA ATÉ 16/05/2026"
+  },
+  "model": {
+    "name": "Rebeca Barreto",
+    "username": "@becaa_barreto",
+    "avatar": "/media/avatar.jpg",
+    "banner": "/media/banner.jpg",
+    "bannerFallback": "/media/banner.jpg",
+    "bio": "BECA BARRETO É A 01 😈😈 Meus vídeos contém sexo explícito mostrando tudo, mamando, me masturbando e tudo mais que você pode imaginar! Aqui tem de tudo!!! NOVINHA DO BUCETÃO 😊😊 BUCETINHA TÃO GOSTOSA E NOVINHA QUE NEM PARECE QUE JÁ FOI USADA!! 😊🔥 AQUI TAMBÉM TEM MUITO CHAT PRIVADO COM FOTOS E VÍDEOS EXCLUSIVOS QUE MANDO PRA VOCÊ, COMO VOCÊ PEDIU 🚨🌀😈 E REALIZO FETICHES A LONGA DISTÂNCIA 😈 Conteúdo pesado MESMO, adoro conversar no chat, aqui você vai ver de tudo e vai se apaixonar! ME MANDA FOTO DO PAU que eu gosto muito 😈👿 EU POSTO CONTEÚDO TODOS OS DIAS E FALO COM VOCÊ NO CHAT!",
+    "verified": true,
+    "liveNow": true
+  },
+  "stats": {
+    "posts": 502,
+    "videos": 148,
+    "photos": 354,
+    "likes": "20.2K"
+  },
+  "plans": [
+    {
+      "id": "30d",
+      "title": "30 Dias",
+      "price": "9,90",
+      "badge": "Promocional",
+      "badgeColor": "green",
+      "highlight": true,
+      "cta": "VEJA TUDO AGORA 🔥🔥",
+      "extra": "+ CHAMADA DE VÍDEO COMIGO HOJE!"
+    },
+    {
+      "id": "3m",
+      "title": "3 Meses",
+      "price": "14,90",
+      "badge": "Mais popular 🔥",
+      "badgeColor": "orange",
+      "highlight": false,
+      "cta": "ASSINAR AGORA"
+    },
+    {
+      "id": "1a",
+      "title": "1 Ano",
+      "price": "19,90",
+      "badge": "Melhor oferta",
+      "badgeColor": "orange",
+      "highlight": false,
+      "cta": "ASSINAR AGORA"
+    },
+    {
+      "id": "vit",
+      "title": "Vitalício",
+      "price": "29,90",
+      "badge": "Exclusivo",
+      "badgeColor": "blue",
+      "highlight": false,
+      "cta": "ASSINAR AGORA"
+    }
+  ],
+  "combo": {
+    "enabled": true,
+    "title": "Super Combo Exclusivo",
+    "subtitle": "Tudo que tenho a oferecer em um único pacote",
+    "price": "150,00",
+    "cta": "QUERO O SUPER COMBO",
+    "benefits": [
+      "Acesso Vitalício ao meu Privacy",
+      "Entrada no meu Grupo VIP no Telegram",
+      "Uma live exclusiva comigo",
+      "Meu WhatsApp",
+      "Pedidos de vídeo exclusivos personalizados por mim"
+    ]
+  },
+  "socialProof": {
+    "enabled": true,
+    "notifications": [
+      { "name": "Alessandro S.", "action": "assinou", "plan": "Super Combo" },
+      { "name": "Carlos M.", "action": "assinou", "plan": "30 Dias" },
+      { "name": "Rafael T.", "action": "assinou", "plan": "3 Meses" },
+      { "name": "Diego F.", "action": "assinou", "plan": "Vitalício" },
+      { "name": "Mateus R.", "action": "assinou", "plan": "1 Ano" },
+      { "name": "Lucas P.", "action": "assinou", "plan": "30 Dias" },
+      { "name": "Gabriel S.", "action": "assinou", "plan": "Super Combo" },
+      { "name": "Bruno A.", "action": "assinou", "plan": "3 Meses" },
+      { "name": "Henrique L.", "action": "assinou", "plan": "30 Dias" },
+      { "name": "Thiago B.", "action": "assinou", "plan": "Vitalício" },
+      { "name": "Rodrigo N.", "action": "assinou", "plan": "Super Combo" },
+      { "name": "Felipe C.", "action": "assinou", "plan": "1 Ano" },
+      { "name": "Anderson V.", "action": "assinou", "plan": "30 Dias" },
+      { "name": "Marcelo O.", "action": "assinou", "plan": "3 Meses" },
+      { "name": "Gustavo M.", "action": "assinou", "plan": "Super Combo" },
+      { "name": "Paulo R.", "action": "assinou", "plan": "30 Dias" },
+      { "name": "João H.", "action": "assinou", "plan": "Vitalício" },
+      { "name": "William F.", "action": "assinou", "plan": "1 Ano" },
+      { "name": "Eduardo K.", "action": "assinou", "plan": "30 Dias" },
+      { "name": "Leonardo D.", "action": "assinou", "plan": "Super Combo" }
+    ]
+  },
+  "feed": [
+    {
+      "id": "f1",
+      "type": "video",
+      "src": "/media/previa_1.mp4",
+      "blur": true,
+      "likes": "55.3K",
+      "comments": "8.4K"
+    },
+    {
+      "id": "f2",
+      "type": "video",
+      "src": "/media/previa_2.mp4",
+      "blur": true,
+      "likes": "67.4K",
+      "comments": "1.9K"
+    },
+    {
+      "id": "f3",
+      "type": "video",
+      "src": "/media/previa_3.mp4",
+      "blur": true,
+      "likes": "89.6K",
+      "comments": "7.1K"
+    }
+  ],
+  "testimonials": [
+    {
+      "name": "João Henrique, 32 anos",
+      "avatar": "/media/testemunho1.jpg",
+      "quote": "Não acreditava que seria tão bom por esse preço. O acesso foi instantâneo. Recomendo!"
+    },
+    {
+      "name": "Carlos Silva, 45 anos",
+      "avatar": "/media/testemunho2.jpg",
+      "quote": "Conteúdo sem censura, bem melhor que esses por aí. E ainda recebo zap? Tô dentro!"
+    },
+    {
+      "name": "Rafael Mendes, 28 anos",
+      "avatar": "/media/testemunho3.jpg",
+      "quote": "Assino faz 3 meses e não me arrependo. Conteúdo novo toda semana. Vale muito!"
+    },
+    {
+      "name": "Diego Alves, 35 anos",
+      "avatar": "/media/testemunho4.jpg",
+      "quote": "Paguei pelo Super Combo e foi a melhor decisão. A live exclusiva foi incrível demais!"
+    }
+  ],
+  "faq": [
+    {
+      "question": "É sigiloso? Vai aparecer na fatura?",
+      "answer": "Sim, é sigiloso. Cobrança discreta, sem nomes chamativos. Seus dados ficam criptografados."
+    },
+    {
+      "question": "Quando tenho acesso depois do pagamento?",
+      "answer": "Imediato. Pagamento aprovado = liberação em até 10s e e-mail contendo o login de acesso."
+    },
+    {
+      "question": "Posso cancelar quando quiser? A assinatura renova?",
+      "answer": "Sim. Você pode cancelar a renovação automática pela área do assinante a qualquer momento."
+    },
+    {
+      "question": "Tem reembolso?",
+      "answer": "Sim. Reembolso de 7 dias sem burocracia. Se não curtir, devolvemos 100%."
+    },
+    {
+      "question": "Como funciona a \"chamada de vídeo\"?",
+      "answer": "Basta mandar uma mensagem no chat do produtor e combinar."
+    },
+    {
+      "question": "Posso pedir conteúdo personalizado?",
+      "answer": "Sim! Solicitações podem ser feitas no chat do produtor, com o conteúdo desejado."
+    }
+  ],
+  "footer": {
+    "text": "© 2026 Todos os direitos reservados. Conteúdo exclusivo para maiores de 18 anos.",
+    "links": [
+      { "label": "Termos de Uso", "href": "#" },
+      { "label": "Política de Privacidade", "href": "#" }
+    ]
+  }
+}

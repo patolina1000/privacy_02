@@ -1,0 +1,1295 @@
+Visao Geral
+Documentacao completa da API NexusPag para PIX, split de recebiveis, webhooks assinados e integracoes server-to-server.
+
+NexusPag API
+Integre cobrancas PIX, consulte transacoes, envie splits e receba eventos no seu backend sem depender do painel. As rotas autenticadas usam API key e os webhooks podem ser validados com HMAC.
+
+Base URL
+Use a URL abaixo como prefixo para todas as chamadas da API.
+
+https://nexuspag.com
+
+Autenticacao
+Todas as requisicoes autenticadas devem incluir sua chave no header x-api-key.
+
+Credencial	Uso	Como obter
+API key	Integracao server-to-server	Dashboard / Integracoes / API Keys
+Webhook secret	Validacao HMAC dos eventos	Dashboard / Integracoes / Webhooks
+Formato
+JSON
+Envie payloads em JSON com Content-Type application/json.
+
+Idempotencia
+Use external_id para evitar cobrancas duplicadas no mesmo pedido.
+
+Datas
+Campos de data usam ISO 8601 e timezone UTC.
+
+Recursos da API
+Principais endpoints disponiveis para integracao.
+
+
+POST
+PIX
+Criar Cobranca PIX
+/api/pix/create
+Gera um QR Code PIX para recebimento de pagamentos. Suporta split automatico para dividir o valor entre multiplas contas.
+
+
+GET
+PIX
+Consultar PIX
+/api/pix/{id}
+Consulta o status e detalhes de uma cobranca PIX, incluindo splits processados. O {id} pode ser o UUID da transacao (NexusPag), o txid do gateway ou o external_id informado na criacao.
+
+
+GET
+Subcontas
+Listar Subcontas
+/api/shops
+Retorna a lista paginada de subcontas vinculadas a sua conta. Permite busca por nome ou external_ref.
+
+
+GET
+Subcontas
+Detalhe da Subconta
+/api/shops/{id}
+Retorna os dados completos de uma subconta. O {id} pode ser o UUID interno ou o external_ref informado por voce.
+
+
+GET
+Subcontas
+Saldo da Subconta
+/api/shops/{id}/balance
+Retorna o saldo atual e estatisticas agregadas (total recebido, sacado, splits) de uma subconta.
+
+
+GET
+Subcontas
+Transacoes da Subconta
+/api/shops/{id}/transactions
+Lista as transacoes de uma subconta — inclui pagamentos PIX recebidos e splits recebidos de outras subcontas, ordenado por data decrescente.
+
+
+POST
+Subcontas
+Sacar Saldo da Subconta
+/api/shops/{id}/withdraw
+Realiza um saque PIX direto do saldo de uma subconta. O valor e debitado atomicamente do wallet_balance da subconta. Cooldown de 5 minutos entre saques (scoped por sub_shop_id quando informado).
+
+
+GET
+Subcontas
+Historico de Saques
+/api/shops/{id}/withdrawals
+Lista paginada dos saques de uma subconta, ordenada por data decrescente.
+
+
+POST
+Webhooks
+Notificacao de Pagamento
+Sua URL configurada
+Webhook enviado automaticamente para sua URL quando um pagamento PIX e confirmado. Configure a URL no campo webhook_url ao criar a cobranca, ou registre URLs globais em Dashboard / Integracoes / Webhooks. Os splits ja foram processados quando o webhook e enviado.
+
+Webhooks
+Eventos em tempo real com retry e assinatura.
+
+Configure uma URL publica no campo webhook_url. Quando um evento for confirmado, a NexusPag envia um POST para sua aplicacao.
+
+Responda com HTTP 200 para confirmar recebimento. Em caso de timeout ou status diferente de 2xx, a entrega pode ser reenviada automaticamente.
+
+Eventos disponiveis
+payment.confirmed
+cashout.success
+cashout.failed
+refund.completed
+Validacao de assinatura
+Quando o secret estiver ativo, valide o HMAC usando os headers x-nexuspag-signature e x-nexuspag-timestamp.
+
+Node.js HMAC
+Copiar
+import crypto from 'crypto'
+
+const signature = request.headers['x-nexuspag-signature']
+const timestamp = request.headers['x-nexuspag-timestamp']
+const payload = JSON.stringify(request.body)
+
+const expected = crypto
+  .createHmac('sha256', process.env.NEXUSPAG_WEBHOOK_SECRET)
+  .update(`${timestamp}.${payload}`)
+  .digest('hex')
+
+if (signature !== expected) {
+  throw new Error('Webhook signature invalid')
+}
+Inicio rapido
+Criar cobranca PIX
+Copiar
+curl --location 'https://nexuspag.com/api/pix/create' \
+  --header 'x-api-key: YOUR_API_KEY' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "amount": 50.00,
+    "description": "Pedido #123",
+    "external_id": "pedido-123",
+    "webhook_url": "https://sua-api.com/webhooks/nexuspag"
+  }'
+
+--
+
+POST
+/api/pix/create
+Criar Cobranca PIX
+Gera um QR Code PIX para recebimento de pagamentos. Suporta split automatico para dividir o valor entre multiplas contas.
+
+Pontos de atencao
+
+Valores em REAIS com 2 casas decimais (ex: 50.00 = R$50,00)
+
+Valor minimo: R$ 1,00
+
+Idempotencia: se voce enviar o mesmo external_id mais de uma vez, a API retorna a transacao existente (200) sem criar uma nova cobranca.
+
+Split: use amount (valor fixo) OU percent (percentual) em cada regra, nao ambos. O split e calculado sobre o net_amount e so e creditado quando o pagamento for confirmado.
+
+splits_preview mostra a previsao exata da distribuicao antes do pagamento ser confirmado.
+
+Configure webhook_url para receber notificacao automatica do pagamento, incluindo os splits processados
+
+Headers
+Parametro
+Tipo
+Descricao
+Exemplo
+x-api-key
+required
+string
+Sua chave de API
+nxp_live_a089b1f...
+Content-Type
+required
+string
+application/json
+application/json
+Body Parameters
+Parametro
+Tipo
+Descricao
+amount
+required
+number
+Valor em reais (ex: 50.00 = R$50,00). Minimo: R$1,00
+description
+string
+Descricao da cobranca (exibida no app do banco)
+external_id
+string
+ID externo para referencia no seu sistema. Funciona como chave de idempotencia: se ja existir uma transacao com esse external_id, ela e retornada sem criar nova cobranca.
+webhook_url
+string
+URL para receber notificacao quando o pagamento for confirmado
+expiration
+integer
+Tempo de expiracao em SEGUNDOS (padrao: 1800 = 30min)
+split
+array
+Regras de split para dividir o valor liquido entre contas NexusPag. Cada item deve ter user_id + amount (valor fixo em R$) OU user_id + percent (percentual do liquido). Maximo 10 regras.
+└─
+user_id
+required
+string
+UUID da conta NexusPag que vai receber o split
+└─
+percent
+number
+Percentual do valor liquido (ex: 25 = 25%). Soma de todos os percent nao pode atingir 100%
+└─
+amount
+number
+Valor fixo em reais (ex: 5.00 = R$5,00). Soma dos amounts nao pode exceder o valor total
+Response Details
+Campo
+Tipo
+Descricao
+success
+boolean
+Indica que a cobranca foi criada ou retornada por idempotencia
+transaction
+object
+Objeto com os dados da cobranca PIX
+transaction.id
+string
+Identificador unico da transacao no NexusPag
+transaction.txid
+string
+Identificador da transacao no gateway
+transaction.external_id
+string | null
+Seu ID externo para referencia (null se nao informado)
+transaction.amount
+number
+Valor bruto em reais
+transaction.fee
+number
+Taxa cobrada em reais
+transaction.fee_percent
+number
+Percentual da taxa
+transaction.net_amount
+number
+Valor liquido total (apos taxas, antes dos splits)
+transaction.status
+string
+Status inicial da cobranca: pending
+transaction.pix_copia_cola
+string
+Codigo PIX copia e cola
+transaction.qr_code_base64
+string
+Imagem do QR Code em base64
+transaction.expires_at
+string
+Data/hora de expiracao (ISO 8601)
+transaction.shop_id
+string?
+ID interno do shop quando shop_id for usado
+transaction.shop_external_ref
+string?
+Referencia externa do shop quando informada
+transaction.splits_preview
+object
+Previsao dos splits (so aparece quando split e informado)
+transaction.splits_preview.owner_net_amount
+number
+Valor que voce recebe apos os splits
+transaction.splits_preview.splits[]
+array
+Lista de splits com user_id, amount e percent quando aplicavel
+Response Codes
+201
+Cobranca criada
+200
+Idempotencia
+400
+amount invalido, abaixo do minimo, ou split mal formatado
+401
+API Key invalida ou nao fornecida
+409
+Conflito de external_id quando a cobranca existente nao pode ser retornada
+429
+Muitas requisicoes - aguarde alguns segundos
+500
+Erro interno - tente novamente
+502
+Gateway indisponivel ou falha ao gerar a cobranca PIX
+Language
+
+
+cURL
+Node.js
+Node.js
+Python
+Python
+PHP
+PHP
+Go
+Go
+Ruby
+Ruby
+Java
+Java
+.NET
+.NET
+Request
+Response
+Status
+cURL Request
+POST
+/api/pix/create
+curl --location 'https://nexuspag.com/api/pix/create' \
+  --header 'x-api-key: YOUR_API_KEY' \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "amount": 50,
+  "description": "Pedido #123",
+  "external_id": "pedido-123",
+  "webhook_url": "https://sua-api.com/webhooks/nexuspag",
+  "expiration": 1800,
+  "split": [
+    {
+      "user_id": "UUID_DA_CONTA_DESTINO",
+      "percent": 25
+    }
+  ]
+}'
+
+--
+
+GET
+/api/pix/{id}
+Consultar PIX
+Consulta o status e detalhes de uma cobranca PIX, incluindo splits processados. O {id} pode ser o UUID da transacao (NexusPag), o txid do gateway ou o external_id informado na criacao.
+
+Pontos de atencao
+
+O {id} pode ser o UUID do NexusPag, o txid do gateway ou o external_id informado na criacao
+
+Se o status ainda for "pending", a API verifica no gateway se ja foi pago
+
+O campo splits mostra o status real dos splits; credited indica se ja foi creditado na conta do destinatario
+
+Headers
+Parametro
+Tipo
+Descricao
+Exemplo
+x-api-key
+required
+string
+Sua chave de API
+nxp_live_a089b1f...
+Response Details
+Campo
+Tipo
+Descricao
+id
+string
+ID da transacao no NexusPag
+txid
+string
+ID da transacao no gateway
+external_id
+string
+Seu ID externo (se informado)
+status
+string
+pending | paid | expired | cancelled
+amount
+number
+Valor bruto em reais
+fee
+number
+Taxa cobrada em reais
+fee_percent
+number
+Percentual da taxa
+net_amount
+number
+Valor liquido total (apos taxas)
+description
+string
+Descricao da cobranca
+pix_copia_cola
+string
+Codigo PIX copia e cola
+qr_code_base64
+string
+Imagem do QR Code em base64
+payer_name
+string | null
+Nome do pagador (apos pagamento)
+payer_document
+string | null
+CPF/CNPJ mascarado do pagador
+paid_at
+string | null
+Data/hora do pagamento (se pago)
+expires_at
+string
+Data/hora de expiracao da cobranca
+created_at
+string
+Data/hora em que a cobranca foi criada
+metadata
+object
+Metadados internos e dados adicionais da cobranca
+shop_id
+string?
+ID interno do shop quando a cobranca veio de shop_id
+shop_external_ref
+string?
+Referencia externa do shop quando informada
+splits
+object
+Detalhes dos splits (so aparece quando split foi configurado)
+splits.owner_net_amount
+number
+Valor que voce recebeu apos os splits
+splits.details
+array
+Lista de splits com status de creditacao
+splits.details[].amount
+number
+Valor calculado para a conta destino
+splits.details[].percent
+number
+Percentual usado na regra, quando aplicavel
+splits.details[].credited
+boolean
+Se o split ja foi creditado na conta destino
+splits.details[].credited_at
+string
+Data/hora da creditacao (null se pendente)
+Response Codes
+200
+Sucesso
+401
+API Key invalida
+404
+Transacao nao encontrada
+Language
+
+
+cURL
+Node.js
+Node.js
+Python
+Python
+PHP
+PHP
+Go
+Go
+Ruby
+Ruby
+Java
+Java
+.NET
+.NET
+Request
+Response
+Status
+cURL Request
+GET
+/api/pix/{id}
+curl --location 'https://nexuspag.com/api/pix/9c29870c-9f69-...' \
+  --header 'x-api-key: YOUR_API_KEY'
+
+Copiar código
+
+_-
+
+GET
+/api/shops
+Listar Subcontas
+Retorna a lista paginada de subcontas vinculadas a sua conta. Permite busca por nome ou external_ref.
+
+Pontos de atencao
+
+Subcontas sao criadas automaticamente no primeiro POST /api/pix/create com shop_id informado
+
+O external_ref e a string que voce passa em shop_id (qualquer identificador do seu sistema)
+
+Use search pra encontrar subcontas pelo external_ref ou nome (busca parcial, case-insensitive)
+
+Campos opcionais (email, pix_key, pix_key_type) sao omitidos do JSON quando nao informados
+
+Headers
+Parametro
+Tipo
+Descricao
+Exemplo
+x-api-key
+required
+string
+Sua chave de API
+nxp_live_a089b1f...
+Query Parameters
+Parametro
+Tipo
+Descricao
+page
+integer
+Pagina (padrao: 1)
+limit
+integer
+Itens por pagina (padrao: 20, maximo: 100)
+search
+string
+Filtra por external_ref ou name (busca parcial, case-insensitive)
+Response Details
+Campo
+Tipo
+Descricao
+success
+boolean
+Indica sucesso da requisicao
+data
+array
+Lista de subcontas
+data[].id
+string
+UUID interno da subconta no NexusPag
+data[].name
+string
+Nome de exibicao da subconta
+data[].external_ref
+string
+Sua referencia externa (shop_id usado na criacao do PIX)
+data[].email
+string?
+Email da subconta. Omitido quando nao informado.
+data[].wallet_balance
+number
+Saldo disponivel para saque (em reais)
+data[].blocked_balance
+number
+Saldo bloqueado (saques pendentes)
+data[].pix_key
+string?
+Chave PIX padrao para saque. Omitido quando nao configurada.
+data[].pix_key_type
+string?
+cpf | cnpj | email | phone | random. Omitido quando nao configurado.
+data[].is_active
+boolean
+Se a subconta esta ativa
+data[].created_at
+string
+Data de criacao (ISO 8601)
+data[].updated_at
+string
+Ultima atualizacao (ISO 8601)
+total
+integer
+Total de subcontas (sem considerar paginacao)
+page
+integer
+Pagina atual
+limit
+integer
+Itens por pagina
+Response Codes
+200
+Sucesso
+401
+API Key invalida ou nao fornecida
+Language
+
+
+cURL
+Node.js
+Node.js
+Python
+Python
+PHP
+PHP
+Go
+Go
+Ruby
+Ruby
+Java
+Java
+.NET
+.NET
+Request
+Response
+Status
+cURL Request
+GET
+/api/shops
+curl --location 'https://nexuspag.com/api/shops' \
+  --header 'x-api-key: YOUR_API_KEY'
+
+--
+
+GET
+/api/shops/{id}
+Detalhe da Subconta
+Retorna os dados completos de uma subconta. O {id} pode ser o UUID interno ou o external_ref informado por voce.
+
+Pontos de atencao
+
+O {id} aceita tanto o UUID interno quanto o external_ref (shop_id)
+
+A busca e sempre scoped pela sua conta — voce so ve subcontas suas
+
+Campos opcionais (email, pix_key, pix_key_type) sao omitidos do JSON quando nao informados
+
+Headers
+Parametro
+Tipo
+Descricao
+Exemplo
+x-api-key
+required
+string
+Sua chave de API
+nxp_live_a089b1f...
+Response Details
+Campo
+Tipo
+Descricao
+success
+boolean
+Indica sucesso da requisicao
+shop
+object
+Dados da subconta
+shop.id
+string
+UUID interno da subconta
+shop.name
+string
+Nome de exibicao
+shop.external_ref
+string
+Sua referencia externa
+shop.email
+string?
+Email da subconta. Omitido quando nao informado.
+shop.wallet_balance
+number
+Saldo disponivel (em reais)
+shop.blocked_balance
+number
+Saldo bloqueado
+shop.pix_key
+string?
+Chave PIX padrao para saque. Omitido quando nao configurada.
+shop.pix_key_type
+string?
+cpf | cnpj | email | phone | random. Omitido quando nao configurado.
+shop.is_active
+boolean
+Se esta ativa
+shop.created_at
+string
+Data de criacao
+shop.updated_at
+string
+Ultima atualizacao
+Response Codes
+200
+Sucesso
+401
+API Key invalida
+404
+Subconta nao encontrada
+
+--
+
+GET
+/api/shops/{id}/balance
+Saldo da Subconta
+Retorna o saldo atual e estatisticas agregadas (total recebido, sacado, splits) de uma subconta.
+
+Pontos de atencao
+
+wallet_balance e o valor disponivel para saque imediato
+
+total_received_net leva em conta apenas o que efetivamente entrou nessa subconta (apos splits)
+
+Use esses valores pra exibir um dashboard financeiro pra cada subconta
+
+Headers
+Parametro
+Tipo
+Descricao
+Exemplo
+x-api-key
+required
+string
+Sua chave de API
+nxp_live_a089b1f...
+Response Details
+Campo
+Tipo
+Descricao
+success
+boolean
+Indica sucesso
+wallet_balance
+number
+Saldo disponivel para saque (em reais)
+blocked_balance
+number
+Saldo bloqueado (saques em processamento)
+external_ref
+string
+Referencia externa da subconta
+total_received_gross
+number
+Total bruto recebido (antes de taxas)
+total_received_net
+number
+Total liquido recebido (apos taxas e splits)
+total_transactions
+integer
+Total de transacoes (todas as status)
+total_paid_transactions
+integer
+Total de transacoes pagas
+total_withdrawn
+number
+Total ja sacado (incluindo taxas)
+total_withdrawals
+integer
+Quantidade total de saques
+completed_withdrawals
+integer
+Quantidade de saques completados
+splits_received
+number
+Total recebido via splits de outras subcontas
+splits_received_count
+integer
+Quantidade de splits recebidos
+splits_paid
+number
+Total pago em splits para outras subcontas
+splits_paid_count
+integer
+Quantidade de splits pagos
+Response Codes
+200
+Sucesso
+401
+API Key invalida
+404
+Subconta nao encontrada
+Language
+
+
+cURL
+Node.js
+Node.js
+Python
+Python
+PHP
+PHP
+Go
+Go
+Ruby
+Ruby
+Java
+Java
+.NET
+.NET
+Request
+Response
+Status
+cURL Request
+GET
+/api/shops/{id}/balance
+curl --location 'https://nexuspag.com/api/shops/9c29870c-9f69-.../balance' \
+  --header 'x-api-key: YOUR_API_KEY'
+
+Co
+--
+GET
+/api/shops/{id}/transactions
+Transacoes da Subconta
+Lista as transacoes de uma subconta — inclui pagamentos PIX recebidos e splits recebidos de outras subcontas, ordenado por data decrescente.
+
+Pontos de atencao
+
+A lista combina dois tipos de entrada: pix_in (cobrancas pagas) e split_received (splits de outras subcontas)
+
+Use o campo type pra distinguir os dois casos
+
+O campo stats traz totais agregados (uteis pra dashboard)
+
+Headers
+Parametro
+Tipo
+Descricao
+Exemplo
+x-api-key
+required
+string
+Sua chave de API
+nxp_live_a089b1f...
+Query Parameters
+Parametro
+Tipo
+Descricao
+page
+integer
+Pagina (padrao: 1)
+limit
+integer
+Itens por pagina (padrao: 20, maximo: 100)
+Response Details
+Campo
+Tipo
+Descricao
+success
+boolean
+Indica sucesso
+data
+array
+Lista unificada de transacoes (pix_in + splits)
+data[].id
+string
+ID da transacao ou ledger entry
+data[].type
+string
+pix_in (pagamento recebido) ou split_received (split de outra subconta)
+data[].amount
+number
+Valor bruto em reais
+data[].fee
+number
+Taxa cobrada (sempre 0 para split_received)
+data[].net_amount
+number
+Valor liquido creditado na subconta
+data[].status
+string
+Status da transacao
+data[].description
+string | null
+Descricao
+data[].external_id
+string | null
+Seu ID externo (apenas para pix_in)
+data[].payer_name
+string | null
+Nome do pagador (apenas para pix_in)
+data[].payer_document
+string | null
+CPF/CNPJ mascarado do pagador
+data[].source_shop
+string
+External_ref da subconta de origem (apenas para split_received)
+data[].paid_at
+string | null
+Data do pagamento
+data[].created_at
+string
+Data de criacao
+total
+integer
+Total de itens (pix_in + splits)
+page
+integer
+Pagina atual
+limit
+integer
+Itens por pagina
+stats
+object
+Estatisticas agregadas da subconta
+Response Codes
+200
+Sucesso
+401
+API Key invalida
+404
+Subconta nao encontrada
+Language
+
+
+cURL
+Node.js
+Node.js
+Python
+Python
+PHP
+PHP
+Go
+Go
+Ruby
+Ruby
+Java
+Java
+.NET
+.NET
+Request
+Response
+Status
+cURL Request
+GET
+/api/shops/{id}/transactions
+curl --location 'https://nexuspag.com/api/shops/9c29870c-9f69-.../transactions' \
+  --header 'x-api-key: YOUR_API_KEY'
+
+Co
+
+--
+
+Sacar Saldo da Subconta
+Realiza um saque PIX direto do saldo de uma subconta. O valor e debitado atomicamente do wallet_balance da subconta. Cooldown de 5 minutos entre saques (scoped por sub_shop_id quando informado).
+
+Pontos de atencao
+
+Valor minimo: R$ 10,00 (configurado pela plataforma)
+
+Cooldown: 5 minutos entre saques. Use sub_shop_id pra ter cooldown independente por usuario final.
+
+Se voce tiver 2FA ativo na conta principal, totp_code e obrigatorio.
+
+O valor e ajustado automaticamente caso exceda o limite por transacao ou o saldo disponivel.
+
+Idempotencia: passe correlation_id pra evitar duplicacao em retries (rede instavel, double-fire do client).
+
+Status processing significa que o saque foi enviado ao gateway mas ainda nao confirmado — use webhook_url ou consulte GET /api/shops/{id}/withdrawals.
+
+Em caso de timeout no gateway, o saque fica como processing e o saldo nao e estornado (verificacao assincrona).
+
+Headers
+Parametro
+Tipo
+Descricao
+Exemplo
+x-api-key
+required
+string
+Sua chave de API
+nxp_live_a089b1f...
+Content-Type
+required
+string
+application/json
+application/json
+Body Parameters
+Parametro
+Tipo
+Descricao
+amount
+required
+number
+Valor do saque em reais (ex: 50.00). Minimo configurado pela plataforma (padrao R$ 10,00).
+pix_key
+required
+string
+Chave PIX de destino. Obrigatoria, exceto se a subconta tiver chave PIX padrao configurada.
+pix_key_type
+required
+string
+Tipo da chave: cpf | cnpj | email | phone | random | qrc (PIX copia-e-cola)
+totp_code
+string
+Codigo 2FA da sua conta principal. Obrigatorio se voce tiver 2FA ativado.
+webhook_url
+string
+URL para receber notificacao do status do saque
+correlation_id
+string
+ID idempotente para o saque. Se ja existir um saque com esse correlation_id, retorna o existente sem criar novo. Funciona como protecao contra retries.
+sub_shop_id
+string
+Identificador opcional do usuario final no seu sistema. Quando informado, o cooldown de 5 min e scoped por (subconta, sub_shop_id), permitindo saques paralelos para usuarios distintos.
+Response Details
+Campo
+Tipo
+Descricao
+success
+boolean
+Indica sucesso
+withdrawal_id
+string
+UUID do saque criado
+amount
+number
+Valor sacado (apos eventual ajuste por limite)
+fee
+number
+Taxa cobrada pelo saque
+net_amount
+number
+Valor liquido enviado (mesmo que amount)
+status
+string
+completed | processing — completed e final, processing ainda sera confirmado
+new_balance
+number
+Novo saldo da subconta apos o debito
+idempotent
+boolean
+true se o saque ja existia (retornado por correlation_id)
+Response Codes
+200
+Sucesso
+400
+Valor invalido, abaixo do minimo, chave PIX faltando ou codigo 2FA invalido
+401
+API Key invalida
+403
+Saques desabilitados pela plataforma ou conta nao verificada
+404
+Subconta nao encontrada
+429
+Cooldown de 5 min entre saques (campo cooldown_seconds traz o tempo restante)
+502
+Falha no gateway PIX
+Language
+
+
+cURL
+Node.js
+Node.js
+Python
+Python
+PHP
+PHP
+Go
+Go
+Ruby
+Ruby
+Java
+Java
+.NET
+.NET
+Request
+Response
+Status
+cURL Request
+POST
+/api/shops/{id}/withdraw
+curl --location 'https://nexuspag.com/api/shops/9c29870c-9f69-.../withdraw' \
+  --header 'x-api-key: YOUR_API_KEY' \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "amount": 50,
+  "pix_key": "12345678900",
+  "pix_key_type": "cpf",
+  "totp_code": "123456",
+  "webhook_url": "https://sua-api.com/webhooks/nexuspag",
+  "correlation_id": "saque-pedido-123",
+  "sub_shop_id": "usuario-final-47"
+}'
+
+Cop
+
+--
+
+Historico de Saques
+Lista paginada dos saques de uma subconta, ordenada por data decrescente.
+
+Pontos de atencao
+
+Use gateway_e2eid pra rastrear o PIX no extrato bancario
+
+Saques com status processing podem ainda mudar pra completed ou failed
+
+Headers
+Parametro
+Tipo
+Descricao
+Exemplo
+x-api-key
+required
+string
+Sua chave de API
+nxp_live_a089b1f...
+Query Parameters
+Parametro
+Tipo
+Descricao
+page
+integer
+Pagina (padrao: 1)
+limit
+integer
+Itens por pagina (padrao: 20, maximo: 100)
+Response Details
+Campo
+Tipo
+Descricao
+success
+boolean
+Indica sucesso
+withdrawals
+array
+Lista de saques
+withdrawals[].id
+string
+UUID do saque
+withdrawals[].amount
+number
+Valor sacado em reais
+withdrawals[].fee
+number
+Taxa cobrada
+withdrawals[].net_amount
+number
+Valor liquido (calculado pelo banco)
+withdrawals[].pix_key_type
+string
+cpf | cnpj | email | phone | random
+withdrawals[].pix_key
+string
+Chave PIX de destino
+withdrawals[].status
+string
+pending | processing | completed | failed
+withdrawals[].gateway_txid
+string | null
+ID da transacao no gateway
+withdrawals[].gateway_e2eid
+string | null
+EndToEnd ID do PIX (rastreabilidade)
+withdrawals[].failure_reason
+string | null
+Motivo da falha (se status = failed)
+withdrawals[].processed_at
+string | null
+Data em que o saque foi processado
+withdrawals[].created_at
+string
+Data de criacao
+withdrawals[].updated_at
+string
+Ultima atualizacao
+total
+integer
+Total de saques
+page
+integer
+Pagina atual
+limit
+integer
+Itens por pagina
+Response Codes
+200
+Sucesso
+401
+API Key invalida
+404
+Subconta nao encontrada
+Language
+
+
+cURL
+Node.js
+Node.js
+Python
+Python
+PHP
+PHP
+Go
+Go
+Ruby
+Ruby
+Java
+Java
+.NET
+.NET
+Request
+Response
+Status
+cURL Request
+GET
+/api/shops/{id}/withdrawals
+curl --location 'https://nexuspag.com/api/shops/9c29870c-9f69-.../withdrawals' \
+  --header 'x-api-key: YOUR_API_KEY'
+
+--
+
+POST
+Sua URL configurada
+Notificacao de Pagamento
+Webhook enviado automaticamente para sua URL quando um pagamento PIX e confirmado. Configure a URL no campo webhook_url ao criar a cobranca, ou registre URLs globais em Dashboard / Integracoes / Webhooks. Os splits ja foram processados quando o webhook e enviado.
+
+Pontos de atencao
+
+O webhook e enviado via POST para a URL configurada no campo webhook_url da cobranca, e tambem para URLs globais em Dashboard / Integracoes / Webhooks
+
+Responda com qualquer status 2xx para confirmar recebimento
+
+Retry: ate 8 tentativas com backoff exponencial (imediato, +1min, +5min, +30min, +2h, +12h, +24h, +72h). Total ~7 dias de janela. Erros 4xx encerram as tentativas (consideramos erro do cliente). Erros 5xx, timeout e falhas de rede continuam retentando ate esgotar.
+
+Quando o webhook e disparado, os splits ja foram processados e creditados nas subcontas
+
+Use GET /api/pix/{id} para consultar detalhes dos splits apos receber o webhook
+
+Recomendamos usar external_id + polling como backup do webhook em caso de falha de rede
+
+Verificacao da assinatura HMAC: o header X-Nexuspag-Signature traz t=<unix>,v1=<hmac_hex>. Para validar: calcule HMAC-SHA256 de "<unix>.<body_cru>" usando seu webhook_secret e compare em tempo constante com o valor v1.
+
+O webhook_secret e configurado em Dashboard / Integracoes / Webhooks. Sem ele, o header X-Nexuspag-Signature nao e enviado (compatibilidade com integradores antigos).
+
+Os campos shop_id e shop_external_ref so aparecem em pagamentos de subcontas (quando voce informou shop_id ao criar o PIX).
+
+Headers
+Parametro
+Tipo
+Descricao
+Exemplo
+Content-Type
+required
+string
+application/json (sempre enviado)
+application/json
+X-Nexuspag-Event
+required
+string
+Nome do evento: payment.confirmed (sempre enviado)
+—
+X-Nexuspag-Signature
+string
+Assinatura HMAC no formato t=<unix>,v1=<hmac_hex>. Enviado apenas quando voce tiver webhook_secret configurado.
+—
+Response Details
+Campo
+Tipo
+Descricao
+event
+string
+Tipo do evento: payment.confirmed
+transaction_id
+string
+ID da transacao no NexusPag
+txid
+string
+ID da transacao no gateway
+external_id
+string?
+Seu ID externo (se informado na criacao da cobranca)
+status
+string
+Status do pagamento: paid
+amount
+number
+Valor bruto em reais
+fee
+number
+Taxa cobrada em reais
+net_amount
+number
+Valor liquido total (apos taxas, antes dos splits)
+payer_name
+string
+Nome do pagador
+payer_document_masked
+string
+CPF/CNPJ mascarado do pagador
+paid_at
+string
+Data/hora do pagamento (ISO 8601)
+shop_id
+string?
+UUID da subconta. Aparece apenas quando o pagamento veio de uma subconta (shop_id informado na criacao).
+shop_external_ref
+string?
+Sua referencia externa da subconta (shop_id que voce passou). Aparece quando a subconta tem external_ref.
+Language
+
+
+cURL
+Node.js
+Node.js
+Python
+Python
+PHP
+PHP
+Go
+Go
+Ruby
+Ruby
+Java
+Java
+.NET
+.NET
+Request
+Response
+Status
+cURL Request
+POST
+Sua URL configurada
+curl --location 'https://nexuspag.comSua URL configurada' \
+  --header 'x-api-key: YOUR_API_KEY' \
+  --header 'Content-Type: application/json'
+
+Copiar codigo

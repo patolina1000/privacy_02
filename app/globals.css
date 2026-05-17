@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #ff6b1a;
+  --brand-dark: #e55a0a;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #f5f5f5;
+  font-family: 'Inter', system-ui, sans-serif !important;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar hidden for feed */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Prevent video download */
+video::-webkit-media-controls-download-button {
+  display: none;
+}
+video::-webkit-media-controls-panel {
+  display: none;
+}
+video::--webkit-media-controls-play-button {
+  display: none;
+}
+video::-webkit-media-controls-start-playback-button {
+  display: none;
+}
+
+.pill {
+  padding: 0.4rem 1rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 25rem;
+}
+
+.vibrant-red {
+  background-color: '#E00000' !important;
+}

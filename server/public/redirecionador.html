@@ -1,0 +1,21 @@
+<script>
+  function getUserID() {
+    const match = document.cookie.match(/(^| )userID=([^;]+)/);
+    return match ? match[2] : null;
+  }
+
+  function getQueryParam(name) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+  }
+
+  const plano = getQueryParam("plano");
+  const valor = getQueryParam("valor");
+  const userID = getUserID();
+
+  if (userID && plano && valor) {
+    window.location.href = `/gera?plano=${plano}&valor=${valor}`;
+  } else {
+    window.location.href = "/sem-autorizacao.html";
+  }
+</script>

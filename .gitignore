@@ -1,0 +1,20 @@
+# dependências e build (Render reconstrói: npm ci && npm run build)
+node_modules/
+.next/
+out/
+
+# segredos / ambiente (configurar nas env vars do Render)
+.env
+.env.local
+.env*.local
+
+# banco local
+*.db
+
+# logs e lixo de editor/SO
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db
+.codex
+tsconfig.tsbuildinfo

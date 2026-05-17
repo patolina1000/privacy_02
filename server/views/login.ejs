@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>Login</title></head>
+<body>
+  <h1>Login</h1>
+  <form method="POST" action="/login">
+    <label>Usuário: <input type="text" name="user"></label><br>
+    <label>Senha: <input type="password" name="senha"></label><br>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button type="submit">Entrar</button>
+  </form>
+</body>
+</html>

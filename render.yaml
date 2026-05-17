@@ -1,0 +1,39 @@
+services:
+  # ── Landing page Next.js ──────────────────────────────────────────────────
+  - type: web
+    name: privacy-landing
+    env: node
+    region: oregon
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXUSPAG_API_KEY
+        sync: false          # preencher no dashboard do Render
+      - key: NEXUSPAG_WEBHOOK_SECRET
+        sync: false          # preencher no dashboard do Render
+      - key: TIKTOK_PIXEL_ID
+        sync: false          # D84JMLBC77UDS4G4KNC0
+      - key: TIKTOK_ACCESS_TOKEN
+        sync: false          # preencher no dashboard do Render (Events API token)
+      - key: TIKTOK_TEST_EVENT_CODE
+        sync: false          # remover após validar os eventos (ex: TEST64188)
+      - key: NEXT_PUBLIC_VIP_GROUP_URL
+        sync: false          # link do grupo VIP (ex: https://t.me/SEU_BOT)
+      - key: MONITOR_URL
+        sync: false          # URL pública do monitor + /webhook (ex: https://monitor.onrender.com/webhook)
+      - key: MONITOR_TOKEN
+        sync: false          # mesmo token configurado no serviço do monitor
+
+  # ── Servidor Express (tokens + Telegram) ─────────────────────────────────
+  - type: web
+    name: privacy-server
+    env: node
+    region: oregon
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: node index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
