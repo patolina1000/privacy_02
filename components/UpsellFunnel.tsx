@@ -56,6 +56,9 @@ export default function UpsellFunnel({ onClose }: Props) {
   const [pixData, setPixData] = useState<PixData | null>(null)
   const [copied, setCopied] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // Transações já confirmadas — evita o setInterval async disparar
+  // o "pago" mais de uma vez (callbacks em voo antes do clearInterval).
+  const paidIdsRef = useRef<Set<string>>(new Set())
   const countdown = useCountdown(5 * 60)
 
   const u1Total = 6.5 + (extra1 ? 7 : 0)
@@ -101,6 +104,9 @@ export default function UpsellFunnel({ onClose }: Props) {
         const res = await fetch(`/api/pix/status?id=${pixData.id}`)
         const d = await res.json()
         if (d.status === 'paid') {
+          // Garante 1x por transação (anti duplo-disparo do polling async)
+          if (!pixData || paidIdsRef.current.has(pixData.id)) return
+          paidIdsRef.current.add(pixData.id)
           clearInterval(pollRef.current!)
 
           // Purchase separado para cada taxa

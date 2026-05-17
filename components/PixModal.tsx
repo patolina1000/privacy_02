@@ -37,6 +37,8 @@ export default function PixModal({ plan, onClose, onPaid }: Props) {
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // Evita o setInterval async disparar o "pago" mais de uma vez.
+  const paidIdsRef = useRef<Set<string>>(new Set())
 
   const base = parsePrice(plan.price)
   const total = base + (withVideoCall ? VIDEO_CALL_PRICE : 0)
@@ -59,6 +61,9 @@ export default function PixModal({ plan, onClose, onPaid }: Props) {
         const res = await fetch(`/api/pix/status?id=${pixData.id}`)
         const data = await res.json()
         if (data.status === 'paid') {
+          // Garante 1x por transação (anti duplo-disparo do polling async)
+          if (!pixData || paidIdsRef.current.has(pixData.id)) return
+          paidIdsRef.current.add(pixData.id)
           clearInterval(pollRef.current!)
 
           // Purchase: pagamento confirmado
