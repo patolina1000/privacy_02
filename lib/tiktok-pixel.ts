@@ -1,4 +1,8 @@
-// Client-side TikTok Pixel helpers
+// Tracking client-side unificado: dispara TikTok Pixel + Meta Pixel
+// e repassa pro /api/track (que chama as duas Conversions APIs).
+// O mesmo event_id é usado em tudo, então cada rede deduplica sozinha.
+
+import { getFbc, getFbp, metaPixelTrack } from './meta-pixel'
 
 export function genEventId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -46,17 +50,19 @@ export async function trackEvent(params: {
   event_id?: string
 }) {
   const { event, email, name, value, currency, content_id, content_name, order_id } = params
-  // event_id determinístico (Purchase usa purchase_<txid>) para o TikTok
-  // deduplicar pixel + Events API client + Purchase server-side do webhook.
+  // event_id determinístico (Purchase usa purchase_<txid>) — TikTok e
+  // Meta deduplicam pixel + Conversions API client + server (webhook).
   const event_id = params.event_id || genEventId()
   const ttclid = getTtclid()
   const ttp = getTtp()
+  const fbc = getFbc()
+  const fbp = getFbp()
   const url = typeof window !== 'undefined' ? window.location.href : ''
 
   // 1. Identify (se tiver email)
   if (email) pixelIdentify(email)
 
-  // 2. Pixel client-side
+  // 2. Pixel TikTok client-side
   try {
     const ttq = getPixel()
     if (ttq) {
@@ -69,10 +75,27 @@ export async function trackEvent(params: {
     }
   } catch {}
 
-  // 3. Server-side Events API (fire-and-forget)
+  // 3. Pixel Meta client-side (Facebook/Instagram)
+  try {
+    const mProps: Record<string, unknown> = { currency: 'BRL' }
+    if (value !== undefined) mProps.value = value
+    if (content_id) {
+      mProps.content_ids = [content_id]
+      mProps.content_type = 'product'
+      if (content_name) mProps.content_name = content_name
+    }
+    if (order_id) mProps.order_id = order_id
+    metaPixelTrack(event, mProps, event_id)
+  } catch {}
+
+  // 4. Conversions API server-side (TikTok + Meta) — fire-and-forget
   fetch('/api/track', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ event, event_id, email, name, value, content_id, content_name, order_id, ttclid, ttp, url }),
+    body: JSON.stringify({
+      event, event_id, email, name, value,
+      content_id, content_name, order_id,
+      ttclid, ttp, fbc, fbp, url,
+    }),
   }).catch(() => {})
 }

@@ -20,6 +20,11 @@ services:
       # NÃO definir TIKTOK_TEST_EVENT_CODE em produção: com ele os eventos
       # vão como "teste" e NÃO contam no relatório/atribuição do TikTok.
       # Use só localmente para validar na aba Test Events.
+      - key: META_PIXEL_ID
+        sync: false          # ID do pixel Meta (Facebook/Instagram)
+      - key: META_ACCESS_TOKEN
+        sync: false          # token da Conversions API (Gerenciador de Eventos)
+      # NÃO definir META_TEST_EVENT_CODE em produção (mesmo motivo do TikTok).
       - key: NEXT_PUBLIC_VIP_GROUP_URL
         sync: false          # link do grupo VIP (ex: https://t.me/SEU_BOT)
       - key: MONITOR_URL

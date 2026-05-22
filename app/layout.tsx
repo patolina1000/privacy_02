@@ -19,7 +19,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-[#f5f5f5] min-h-screen">
         {/* Pixel TikTok + ViewContent só carregam fora das rotas neutras
             (bridge / preview). Decisão em components/Tracking.tsx */}
-        <Tracking pixelId={process.env.TIKTOK_PIXEL_ID || ''} />
+        <Tracking
+          pixelId={process.env.TIKTOK_PIXEL_ID || ''}
+          metaPixelId={process.env.META_PIXEL_ID || ''}
+        />
         {children}
       </body>
     </html>
