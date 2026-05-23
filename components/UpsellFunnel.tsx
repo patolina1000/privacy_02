@@ -404,7 +404,7 @@ export default function UpsellFunnel({ onClose, initialStep }: Props) {
               : (
                 <div className="bg-white px-5 pt-4 pb-5">
                   <img
-                    src="/media/anexo_1_v2.jpg"
+                    src="/media/anexo_1_v2.jpg?b=1"
                     alt="Aviso Lei Felca"
                     className="w-full rounded-xl mb-3 border border-gray-200"
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
@@ -455,7 +455,7 @@ export default function UpsellFunnel({ onClose, initialStep }: Props) {
               : (
                 <div className="bg-white px-5 pt-4 pb-5">
                   <video
-                    src="/media/anexo_2_v2.mp4"
+                    src="/media/anexo_2_v2.mp4?b=1"
                     autoPlay
                     muted
                     loop
@@ -546,7 +546,7 @@ export default function UpsellFunnel({ onClose, initialStep }: Props) {
               : (
                 <div className="bg-white px-5 pt-4 pb-5">
                   <img
-                    src="/media/anexo_3_v2.jpg"
+                    src="/media/anexo_3_v2.jpg?b=1"
                     alt="Taxa Reembolsável"
                     className="w-full rounded-xl mb-3 border border-gray-200"
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
